@@ -75,7 +75,7 @@ Available function pointer groups are
 |lv_draw_align_pointer_cb|void * (*lv_draw_buf_align_cb)(void *, lv_color_format_t)|lv_draw_buf_handlers_t.align_pointer_cb
 |lv_draw_invalidate_cache_cb|void (*lv_draw_buf_cache_operation_cb)(const lv_draw_buf_t *, const lv_area_t *)|lv_draw_buf_handlers_t.invalidate_cache_cb
 |lv_draw_flush_cache_cb|void (*lv_draw_buf_cache_operation_cb)(const lv_draw_buf_t *, const lv_area_t *)|lv_draw_buf_handlers_t.flush_cache_cb
-|lv_draw_width_to_stride_cb|uint32_t (*lv_draw_buf_width_to_stride_cb)(uint32_t, lv_color_format_t),          lv_draw_buf_handlers_t.width_to_stride_cb
+|lv_draw_width_to_stride_cb|uint32_t (*lv_draw_buf_width_to_stride_cb)(uint32_t, lv_color_format_t)|lv_draw_buf_handlers_t.width_to_stride_cb
 |lv_draw_sw_mask_cb|lv_draw_sw_mask_res_t (*lv_draw_sw_mask_xcb_t)(lv_opa_t *, int32_t, int32_t, int32_t, void *)|lv_draw_sw_mask_common_dsc_t.cb
 |lv_image_deocder_info_cb|lv_result_t (*lv_image_decoder_info_f_t)(lv_image_decoder_t *, lv_image_decoder_dsc_t *, lv_image_header_t *)|lv_image_decoder_t.info_cb
 |lv_image_deocder_open_cb|lv_result_t (*lv_image_decoder_open_f_t)(lv_image_decoder_t *, lv_image_decoder_dsc_t *)|lv_image_decoder_t.open_cb
