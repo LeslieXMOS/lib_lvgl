@@ -1,9 +1,7 @@
-#include "CST816S.h"
 #include <stdio.h>
-#include <xcore/channel.h>
 #include "i2c.h"
 #include "i2c_reg.h"
-#include "lvgl.h"
+#include "CST816S.h"
 
 #define CST816S_ADDRESS 0x15
 
@@ -40,9 +38,11 @@
 #define IOCTL               0xFD
 #define DIS_AUTO_SLEEP      0xFE
 
-port_t p_touch_io = CST816S_IO_PORT;
-uint32_t tp_rst_pin = CST816S_RST_POS;
-i2c_master_t i2c_ctx;
+typedef struct {
+    i2c_master_t i2c_ctx;
+    port_t rst_port;
+    uint32_t rst_mask;
+} cst816s_handler_t;
 
 inline bool read_regbuf(
     i2c_master_t *ctx,
@@ -72,7 +72,9 @@ __attribute__(( fptrgroup("lv_indev_read_cb") ))
 void touchscreen_read_cb(lv_indev_t* indev, lv_indev_data_t* data)
 {
     uint8_t data_raw[8];
-    bool status = read_regbuf(&i2c_ctx, CST816S_ADDRESS, 0x02, data_raw, 5);
+    i2c_master_t* i2c_ctx = &(((cst816s_handler_t*)lv_indev_get_driver_data(indev))->i2c_ctx);
+    bool status = read_regbuf(i2c_ctx, CST816S_ADDRESS, 0x02, data_raw, 5);
+    LV_UNUSED(status);
     if (data_raw[0]) {
         data->point.x = (data_raw[1] << 8 | data_raw[2]) & 0x0FFF;
         data->point.y = (data_raw[3] << 8 | data_raw[4]) & 0x0FFF;
@@ -82,39 +84,52 @@ void touchscreen_read_cb(lv_indev_t* indev, lv_indev_data_t* data)
     }
 }
 
-void reset_cst816s(void) {
-    int io_val = port_in(p_touch_io);
-    io_val &= ~(1 << tp_rst_pin);  // RST active low
-    port_out(p_touch_io, io_val);
+void reset_cst816s(cst816s_handler_t* handler) {
+    int io_val = port_in(handler->rst_port);
+    io_val &= ~(handler->rst_mask);  // RST active low
+    port_out(handler->rst_port, io_val);
     lv_delay_ms(50);
-    io_val = port_in(p_touch_io) | (1 << tp_rst_pin);
-    port_out(p_touch_io, io_val);
+    io_val = port_in(handler->rst_port) | handler->rst_mask;
+    port_out(handler->rst_port, io_val);
     lv_delay_ms(50);
 }
 
 /* Initialize Touchscreen I/O bus, reset controller */
-lv_indev_t* init_cst816s(void)
+lv_indev_t* init_cst816s(const cst816s_config_t* config)
 {
-    port_enable(p_touch_io);
+    cst816s_handler_t* handler = lv_malloc(sizeof(cst816s_handler_t));
+    LV_ASSERT_MSG(handler, "CST816S handler malloc failed\n");
 
-    port_t p_scl = CST816S_I2C_SCL_PORT;
-    port_t p_sda = CST816S_I2C_SDA_PORT;
-    i2c_master_init(&i2c_ctx,
-        p_scl, CST816S_I2C_SCL_POS, CST816S_I2C_SCL_MASK,
-        p_sda, CST816S_I2C_SDA_POS, CST816S_I2C_SDA_MASK,
+    uint32_t scl_mask, sda_mask;
+    scl_mask = ~(1 << config->scl_pin);
+    if (config->scl_port == config->sda_port) {
+        LV_ASSERT_MSG(config->scl_pin != config->sda_pin, "CST816S I2C's SDA and SCL shouldn't be same pin\n");
+        scl_mask &= ~(1 << config->sda_pin);
+        sda_mask = scl_mask;
+    } else {
+        sda_mask = ~(1 << config->sda_pin);
+    }
+
+    i2c_master_init(&(handler->i2c_ctx),
+        config->scl_port, config->scl_pin, scl_mask,
+        config->sda_port, config->sda_pin, sda_mask,
         400);
 
-    reset_cst816s();
+    port_enable(config->rst_port);
+    handler->rst_port = config->rst_port;
+    handler->rst_mask = (1 << config->rst_pin);
+    reset_cst816s(handler);
 
     uint8_t tp_version_info[3];
-    if (read_regbuf(&i2c_ctx, CST816S_ADDRESS, CHIP_ID, tp_version_info, 3)) {
+    if (read_regbuf(&(handler->i2c_ctx), CST816S_ADDRESS, CHIP_ID, tp_version_info, 3)) {
         LV_LOG_INFO("CST816S INFO:\n    Chip ID: 0x%02X\n    Proj ID: 0x%02X\n    FW Ver: 0x%02X\n", tp_version_info[0], tp_version_info[1], tp_version_info[2]);
-        write_reg(&i2c_ctx, CST816S_ADDRESS, DIS_AUTO_SLEEP, 0x01);
+        write_reg(&(handler->i2c_ctx), CST816S_ADDRESS, DIS_AUTO_SLEEP, 0x01);
     } else {
         LV_LOG_ERROR("CST816S communication failed\n");
     }
 
     lv_indev_t* touchdev = lv_indev_create();
+    lv_indev_set_driver_data(touchdev, (void*)handler);
     lv_indev_set_type(touchdev, LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(touchdev, touchscreen_read_cb);
 

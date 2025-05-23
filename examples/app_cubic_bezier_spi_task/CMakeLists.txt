@@ -1,7 +1,7 @@
 # cmake
 cmake_minimum_required(VERSION 3.21)
 include($ENV{XMOS_CMAKE_PATH}/xcommon.cmake)
-project(app_table_demo)
+project(app_cubic_bezier_spi_task)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

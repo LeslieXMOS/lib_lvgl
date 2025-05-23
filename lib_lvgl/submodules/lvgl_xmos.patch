@@ -1189,7 +1189,7 @@ index d1cdb3176..0a422756c 100644
  
 -static bool focus_next_core(lv_group_t * group, void * (*begin)(const lv_ll_t *),
 -                            void * (*move)(const lv_ll_t *, const void *))
-+static bool focus_next_core(lv_group_t * group, 
++static bool focus_next_core(lv_group_t * group,
 +    __attribute__(( fptrgroup("lv_ll_get") )) void * (*begin)(const lv_ll_t *),
 +    __attribute__(( fptrgroup("lv_ll_get") )) void * (*move)(const lv_ll_t *, const void *))
  {

@@ -1,7 +1,7 @@
 LVGL Table on XCORE.AI
 ======================
 
-This example application demonstrates how to utilize lib_lvgl to run lv_example_table_2 on XK-EVK-XU316 with Waveshare's 1.69inch Touch LCD Module.
+This example application demonstrates how to utilize lib_lvgl to run lv_example_anim_3 with spi in seperate core on XK-EVK-XU316 with Waveshare's 1.69inch Touch LCD Module.
 
 ## Get Started
 1. Configure Project through CMake 
@@ -22,7 +22,7 @@ This example application demonstrates how to utilize lib_lvgl to run lv_example_
 
 3. Run the firmware on XK-EVK-XU316
     ```bash
-    xrun --xscope .\bin\app_table_demo.xe
+    xrun --xscope .\bin\app_cubic_bezier_spi_task.xe
     ```
 
 ## Hardware Configuration

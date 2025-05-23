@@ -9,6 +9,9 @@
 #include "lvgl_task.h"
 #include "ST7789.h"
 #include "CST816S.h"
+#include "spi_task.h"
+
+chanend_t c_driver_spi;
 
 __attribute__(( fptrgroup("lvgl_driver_init") ))
 lvgl_drivers_t* lvgl_driver_init(void) {
@@ -16,11 +19,7 @@ lvgl_drivers_t* lvgl_driver_init(void) {
     st7789_config_t disp_config = {
         .width = 240,
         .height = 280,
-        .sck_port = XS1_PORT_1O,
-        .mosi_port = XS1_PORT_1M,
-        .cs_port = XS1_PORT_32A,
-        .cs_pin = 0,
-        .spi_cb = XS1_CLKBLK_1,
+        .c_spi = c_driver_spi,
         .dc_port = XS1_PORT_4A,
         .dc_pin = 0,
         .rst_port = XS1_PORT_4A,
@@ -47,7 +46,7 @@ __attribute__(( fptrgroup("lvgl_ui_init") ))
 void lvgl_ui_init(lvgl_drivers_t* drivers)
 {
     LV_UNUSED(drivers);
-    lv_example_table_2();
+    lv_example_anim_3();
 }
 
 void main_tile0(chanend_t c)
@@ -56,6 +55,17 @@ void main_tile0(chanend_t c)
 
 void main_tile1(chanend_t c)
 {
+    channel_t c_spi = chan_alloc();
+
+    spi_task_config_t spi_task_config = {
+        .sck_port = XS1_PORT_1O,
+        .mosi_port = XS1_PORT_1M,
+        .cs_port = XS1_PORT_32A,
+        .cs_pin = 0,
+        .spi_cb = XS1_CLKBLK_1,
+        .c_control = c_spi.end_a
+    };
+    c_driver_spi = c_spi.end_b;
     lvgl_task_config_t lvgl_task_config = {
         .buf_size = 1,  // using 1/10 of the screen size as buff
         .buf2 = true,   // enable buf2
@@ -64,6 +74,7 @@ void main_tile1(chanend_t c)
     };
 
     PAR_JOBS(
+        PJOB(spi_master_task, (&spi_task_config)),
         PJOB(lvgl_task, (&lvgl_task_config))
     );
 }
