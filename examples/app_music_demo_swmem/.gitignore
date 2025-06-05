@@ -1,0 +1,13 @@
+
+.vscode
+.venv
+.venv*
+
+build
+bin
+
+*.pyc
+**__pycache__/**
+
+*.gtkw
+*.xmt

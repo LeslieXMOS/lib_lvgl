@@ -3,6 +3,7 @@
 #include "spi.h"
 #include "src/drivers/display/st7789/lv_st7789.h"
 #include "spi_task.h"
+#include <string.h>
 
 typedef struct {
     spi_master_t spi_ctx;
@@ -17,6 +18,9 @@ typedef struct {
 } st7789_handler_t;
 
 st7789_handler_t *handler_temp;
+
+#define SPI_BUF_SIZE    256
+static uint8_t spi_buffer[SPI_BUF_SIZE];     // Buffer used for xfer lpddr data
 
 void st7789_io(port_t p, uint32_t mask, bool high) {
     int io_val = port_in(p);
@@ -69,7 +73,15 @@ void send_cmd_st7789(lv_display_t* disp, const uint8_t *cmd, size_t cmd_size, co
         spi_task_master_send(handler->c_spi, (uint8_t*)param, NULL, param_size, NULL, NULL);
     } else {
         spi_master_start_transaction(spi_dev);
-        spi_master_transfer(spi_dev, (uint8_t *)param, NULL, param_size);
+        if ((uint32_t)param > XS1_EXTMEM_BASE && (uint32_t)param < XS1_EXTMEM_BASE+XS1_EXTMEM_SIZE) {
+            for(int i = 0; i < param_size; i+=SPI_BUF_SIZE) {
+                size_t new_size = (param_size-i) <= SPI_BUF_SIZE ? param_size-i : SPI_BUF_SIZE;
+                memcpy(spi_buffer, &param[i], new_size);
+                spi_master_transfer(spi_dev, (uint8_t *)spi_buffer, NULL, new_size);
+            }
+        } else {
+            spi_master_transfer(spi_dev, (uint8_t *)param, NULL, param_size);
+        }
         spi_master_end_transaction(spi_dev);
     }
 }
@@ -95,7 +107,15 @@ void send_color_st7789(lv_display_t *disp, const uint8_t *cmd, size_t cmd_size, 
         spi_task_master_send(handler->c_spi, (uint8_t*)param, NULL, param_size, spi_task_finish_cb, (void*)disp);
     } else {
         spi_master_start_transaction(spi_dev);
-        spi_master_transfer(spi_dev, (uint8_t *)param, NULL, param_size);
+        if ((uint32_t)param > XS1_EXTMEM_BASE && (uint32_t)param < XS1_EXTMEM_BASE+XS1_EXTMEM_SIZE) {
+            for(int i = 0; i < param_size; i+=SPI_BUF_SIZE) {
+                size_t new_size = (param_size-i) <= SPI_BUF_SIZE ? param_size-i : SPI_BUF_SIZE;
+                memcpy(spi_buffer, &param[i], new_size);
+                spi_master_transfer(spi_dev, (uint8_t *)spi_buffer, NULL, new_size);
+            }
+        } else {
+            spi_master_transfer(spi_dev, (uint8_t *)param, NULL, param_size);
+        }
         spi_master_end_transaction(spi_dev);
         lv_display_flush_ready(disp);
     }

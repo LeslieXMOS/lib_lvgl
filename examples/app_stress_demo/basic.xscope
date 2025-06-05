@@ -1,0 +1,3 @@
+<xSCOPEconfig ioMode="basic" enabled="true">
+  <Probe name="TIME" type="CONTINUOUS" datatype="FLOAT" units="mV" enabled="true"/>
+</xSCOPEconfig>

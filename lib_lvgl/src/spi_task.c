@@ -4,6 +4,11 @@
 #include "xcore/select.h"
 #include "xcore/hwtimer.h"
 #include "spi.h"
+#include <string.h>
+
+#define SPI_BUF_SIZE    256
+static uint8_t spi_out_buffer[SPI_BUF_SIZE];     // Buffer used for xfer lpddr data
+static uint8_t spi_in_buffer[SPI_BUF_SIZE];     // Buffer used for xfer lpddr data
 
 void spi_task_master_send(chanend_t c_control, uint8_t* data_out, uint8_t* data_in, size_t len, finish_cb_t finish_cb, void* user_data) {
     chan_out_word(c_control, (uint32_t)get_local_tile_id());
@@ -46,7 +51,17 @@ void spi_master_task(const spi_task_config_t* config) {
             finish_cb_t callback = (finish_cb_t)chan_in_word(config->c_control);
             void* user_data = (void*)chan_in_word(config->c_control);
             spi_master_start_transaction(&spi_dev);
-            spi_master_transfer(&spi_dev, data_out, data_in, len);
+            if ((uint32_t)data_out > XS1_EXTMEM_BASE && (uint32_t)data_out < XS1_EXTMEM_BASE+XS1_EXTMEM_SIZE) {
+                for(int i = 0; i < len; i+=SPI_BUF_SIZE) {
+                    size_t new_size = (len-i) <= SPI_BUF_SIZE ? len-i : SPI_BUF_SIZE;
+                    memcpy(spi_out_buffer, &data_out[i], new_size);
+                    spi_master_transfer(&spi_dev, spi_out_buffer, spi_in_buffer, new_size);
+                    if (data_in)
+                        memcpy(&data_in[i], spi_in_buffer, new_size);
+                }
+            } else {
+                spi_master_transfer(&spi_dev, data_out, data_in, len);
+            }
             spi_master_end_transaction(&spi_dev);
             if (callback) {
                 callback(data_in, len, user_data);

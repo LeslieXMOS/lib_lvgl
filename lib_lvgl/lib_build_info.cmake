@@ -9,13 +9,13 @@ file(GLOB_RECURSE LIB_CXX_SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR} "${LVGL_PATH}/
 
 set(LIB_COMPILER_FLAGS)
 
-execute_process(
-    COMMAND git reset --hard
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/submodules/lvgl
-)
-execute_process(
-    COMMAND git apply ../lvgl_xmos.patch
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/submodules/lvgl
-)
+# execute_process(
+#     COMMAND git reset --hard
+#     WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/submodules/lvgl
+# )
+# execute_process(
+#     COMMAND git apply ../lvgl_xmos.patch
+#     WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/submodules/lvgl
+# )
 
 XMOS_REGISTER_MODULE()
